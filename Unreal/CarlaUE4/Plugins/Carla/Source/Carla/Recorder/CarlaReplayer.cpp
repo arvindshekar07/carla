@@ -174,7 +174,7 @@ std::string CarlaReplayer::ReplayFile(std::string Filename, double TimeStart, do
 void CarlaReplayer::ProcessToTime(double Time)
 {
   double Per = 0.0f;
-  double NewTime = CurrentTime + Time;
+  double NewTime = CurrentTime + (Time * TimeFactor);
   bool bFrameFound = false;
   bool bExitAtNextFrame = false;
   bool bExitLoop = false;
@@ -467,13 +467,18 @@ void CarlaReplayer::UpdatePositions(double Per)
     auto Result = TempMap.find(CurrPos[i].DatabaseId);
     if (Result != TempMap.end())
     {
-      // interpolate
-      InterpolatePosition(PrevPos[Result->second], CurrPos[i], Per);
+      // check if time factor is high
+      if (TimeFactor >= 2.0)
+        // assign first position
+        InterpolatePosition(PrevPos[Result->second], CurrPos[i], 0.0);
+      else
+        // interpolate
+        InterpolatePosition(PrevPos[Result->second], CurrPos[i], Per);
     }
     else
     {
       // assign last position (we don't have previous one)
-      InterpolatePosition(CurrPos[i], CurrPos[i], 0);
+      InterpolatePosition(CurrPos[i], CurrPos[i], 0.0);
     }
 
     // move the camera to follow this actor if required
@@ -506,4 +511,10 @@ void CarlaReplayer::Tick(float Delta)
   }
 
   // UE_LOG(LogCarla, Log, TEXT("Replayer tick"));
+}
+
+// speed (time factor)
+inline void CarlaReplayer::SetSpeed(double NewTimeFactor)
+{
+  TimeFactor = NewTimeFactor;
 }
